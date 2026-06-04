@@ -103,11 +103,11 @@ const AdminUserDetail = () => {
           <Calendar size={20} /> Consistency Heatmap
         </h3>
         <div style={{ overflowX: 'auto', paddingBottom: '1rem' }}>
-          <ActivityCalendar 
-            data={calendarData} 
+          <ActivityCalendar
+            data={calendarData}
             theme={{
               light: ['#ebedf0', '#9be9a8', '#40c463', '#30a14e', '#216e39'],
-              dark: ['#161b22', '#0e4429', '#006d32', '#26a641', '#39d353']
+              dark: ['#ebedf0', '#9be9a8', '#40c463', '#30a14e', '#216e39']
             }}
             labels={{
               totalCount: '{{count}} contributions in the last year'
@@ -149,8 +149,8 @@ const AdminUserDetail = () => {
                     <span>Date: {format(new Date(sub.upload_date), 'dd MMM yyyy')}</span>
                   </div>
                 </div>
-                <button 
-                  className="btn" 
+                <button
+                  className="btn"
                   style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', backgroundColor: '#f1f5f9', color: '#0f172a' }}
                   onClick={() => setSelectedPdfUrl(sub.file_url)}
                 >
@@ -171,11 +171,11 @@ const AdminUserDetail = () => {
             </button>
           </div>
           <div style={{ flex: 1, backgroundColor: '#eee', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
-            <iframe 
-              src={selectedPdfUrl} 
-              width="100%" 
-              height="100%" 
-              style={{ border: 'none' }} 
+            <iframe
+              src={selectedPdfUrl}
+              width="100%"
+              height="100%"
+              style={{ border: 'none' }}
               title="PDF Viewer"
             ></iframe>
           </div>
