@@ -9,16 +9,31 @@ const History = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   
-  const { data: submissions = [], isLoading, isFetching, refetch } = useQuery({
-    queryKey: ['submissions'],
+  const [selectedUserId, setSelectedUserId] = useState(user?.id);
+  const [activeTab, setActiveTab] = useState('users'); // 'users' or 'dates'
+
+  const { data: adminUsers = [] } = useQuery({
+    queryKey: ['admin', 'users'],
     queryFn: async () => {
-      const { data } = await api.get('/submissions');
+      const { data } = await api.get('/admin/users');
       return data;
+    },
+    enabled: user?.role === 'ADMIN'
+  });
+
+  const { data: submissions = [], isLoading, isFetching, refetch } = useQuery({
+    queryKey: ['submissions', selectedUserId],
+    queryFn: async () => {
+      if (user?.role === 'ADMIN' && selectedUserId !== user.id) {
+        const { data } = await api.get(`/admin/submissions?userId=${selectedUserId}`);
+        return data;
+      } else {
+        const { data } = await api.get('/submissions');
+        return data;
+      }
     }
   });
   
-  // UI State
-  const [activeTab, setActiveTab] = useState('name'); // 'name' or 'dates'
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedPdfUrl, setSelectedPdfUrl] = useState(null);
 
@@ -64,6 +79,12 @@ const History = () => {
 
   const dates = Object.keys(groupedByDate).sort((a, b) => new Date(b) - new Date(a));
 
+  const getSelectedUserName = () => {
+    if (selectedUserId === user.id) return user.name;
+    const found = adminUsers.find(u => u.id === selectedUserId);
+    return found ? found.name : 'User';
+  };
+
   if (isLoading) {
     return (
       <div>
@@ -96,16 +117,16 @@ const History = () => {
       {/* Breadcrumb / Navigation */}
       <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '1.5rem', color: 'var(--text-secondary)' }}>
         <button 
-          onClick={() => { setActiveTab('name'); setSelectedDate(null); setSelectedPdfUrl(null); }}
-          style={{ background: 'none', border: 'none', color: activeTab === 'name' ? 'var(--primary-color)' : 'inherit', fontWeight: activeTab === 'name' ? 600 : 400, cursor: 'pointer', fontSize: '1rem' }}
+          onClick={() => { setActiveTab('users'); setSelectedDate(null); setSelectedPdfUrl(null); }}
+          style={{ background: 'none', border: 'none', color: activeTab === 'users' ? 'var(--primary-color)' : 'inherit', fontWeight: activeTab === 'users' ? 600 : 400, cursor: 'pointer', fontSize: '1rem' }}
         >
-          {user?.name}'s Folder
+          {user?.role === 'ADMIN' ? 'All Users' : `${user?.name}'s Folder`}
         </button>
         
         {activeTab === 'dates' && (
           <>
             <ChevronRight size={16} />
-            <span style={{ color: 'var(--primary-color)', fontWeight: 600 }}>Dates</span>
+            <span style={{ color: 'var(--primary-color)', fontWeight: 600 }}>{getSelectedUserName()} (Dates)</span>
           </>
         )}
 
@@ -120,35 +141,60 @@ const History = () => {
       <div style={{ display: 'flex', gap: '2rem' }}>
         {/* Left Column: List/Tabs */}
         <div style={{ flex: selectedPdfUrl ? '0 0 300px' : '1', transition: 'var(--transition-normal)' }}>
-          {activeTab === 'name' ? (
-            <div 
-              className="card" 
-              style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '1rem', transition: 'var(--transition-fast)' }}
-              onClick={() => setActiveTab('dates')}
-            >
-              <div style={{ width: 40, height: 40, borderRadius: '50%', backgroundColor: 'var(--primary-color)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                {user?.name?.charAt(0)}
-              </div>
-              <div>
-                <h3 style={{ margin: 0 }}>{user?.name}</h3>
-                <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{submissions.length} Total Submissions</p>
-              </div>
+          {activeTab === 'users' ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {user?.role === 'ADMIN' ? (
+                adminUsers.map(u => (
+                  <div 
+                    key={u.id}
+                    className="card" 
+                    style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '1rem', transition: 'var(--transition-fast)', border: selectedUserId === u.id ? '2px solid var(--accent-color)' : '1px solid var(--border-color)' }}
+                    onClick={() => { setSelectedUserId(u.id); setActiveTab('dates'); }}
+                  >
+                    <div style={{ width: 40, height: 40, borderRadius: '50%', backgroundColor: 'var(--primary-color)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      {u.name.charAt(0)}
+                    </div>
+                    <div>
+                      <h3 style={{ margin: 0 }}>{u.name}</h3>
+                      <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{u.email}</p>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div 
+                  className="card" 
+                  style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '1rem', transition: 'var(--transition-fast)' }}
+                  onClick={() => { setSelectedUserId(user.id); setActiveTab('dates'); }}
+                >
+                  <div style={{ width: 40, height: 40, borderRadius: '50%', backgroundColor: 'var(--primary-color)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {user?.name?.charAt(0)}
+                  </div>
+                  <div>
+                    <h3 style={{ margin: 0 }}>{user?.name}</h3>
+                    <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)' }}>My Submissions</p>
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               {!selectedDate ? (
                 // Show Dates
-                dates.map(date => (
-                  <div 
-                    key={date} 
-                    className="card"
-                    style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between' }}
-                    onClick={() => setSelectedDate(date)}
-                  >
-                    <span style={{ fontWeight: 500 }}>{format(new Date(date), 'MMMM dd, yyyy')}</span>
-                    <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{groupedByDate[date].length} PDF(s)</span>
-                  </div>
-                ))
+                dates.length > 0 ? (
+                  dates.map(date => (
+                    <div 
+                      key={date} 
+                      className="card"
+                      style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between' }}
+                      onClick={() => setSelectedDate(date)}
+                    >
+                      <span style={{ fontWeight: 500 }}>{format(new Date(date), 'MMMM dd, yyyy')}</span>
+                      <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{groupedByDate[date].length} PDF(s)</span>
+                    </div>
+                  ))
+                ) : (
+                  <p style={{ color: 'var(--text-secondary)' }}>No submissions found for this user.</p>
+                )
               ) : (
                 // Show PDFs for selected date
                 <>

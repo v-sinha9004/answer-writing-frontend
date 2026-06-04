@@ -4,6 +4,8 @@ import Login from './pages/Login';
 import DashboardLayout from './layouts/DashboardLayout';
 import Dashboard from './pages/Dashboard';
 import AdminPanel from './pages/AdminPanel';
+import AdminAllSubmissions from './pages/AdminAllSubmissions';
+import AdminUserDetail from './pages/AdminUserDetail';
 import History from './pages/History';
 
 const ProtectedRoute = ({ children, requireAdmin = false }) => {
@@ -30,11 +32,29 @@ function App() {
       >
         <Route index element={<Dashboard />} />
         <Route path="history" element={<History />} />
+        
+        {/* Admin Routes */}
         <Route 
           path="admin" 
           element={
             <ProtectedRoute requireAdmin={true}>
               <AdminPanel />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="admin/submissions" 
+          element={
+            <ProtectedRoute requireAdmin={true}>
+              <AdminAllSubmissions />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="admin/users/:id" 
+          element={
+            <ProtectedRoute requireAdmin={true}>
+              <AdminUserDetail />
             </ProtectedRoute>
           } 
         />
